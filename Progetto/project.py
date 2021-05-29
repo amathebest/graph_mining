@@ -118,7 +118,85 @@ def luby_MIS(G):
                 E_set.remove(edge)
     return maximal_independent_set
 
+# function that returns true if the set is independent (no 2 vertex build an edge of G)
+def check_if_set_is_IS(G, IS):
+    pairs = itertools.permutations(IS, 2)
+    if any([pair in list(G.edges) for pair in pairs]):
+        return False
+    else:
+        return True
+
+# function that returns true if the independent set is maximal (non-extendible)
+def check_if_set_is_MIS(G, IS):
+    nodes_without_IS = [node for node in list(G.nodes) if node not in IS]
+    if any([is_node_addable_to_IS(G, IS, node) for node in nodes_without_IS]):
+        return False
+    else:
+        return True
+
+# function that returns true if the node we're trying to add doesn't turn the set into a dependent set
+def is_node_addable_to_IS(G, IS, new_node):
+    pairs = [(new_node, node) for node in IS] + [(node, new_node) for node in IS]
+    if any([pair in list(G.edges) for pair in pairs]):
+        return False
+    else:
+        return True
+
+# recursive function
+def find_all_MIS_rec(G, node, V_set, adj_V_set, remaining_nodes, set_of_found_MIS):
+    # exit condition: go back in the recursion tree when there are no remaining nodes available
+    if set(remaining_nodes) == set():
+        return
+    # core of the recursion, we add the node to the set and we remove its adjacency list from the available nodes
+    V_set.append(node)
+    remaining_nodes.remove(node)
+    for adj_node in G.adj[node]:
+        if adj_node in remaining_nodes:
+            remaining_nodes.remove(adj_node)
+        if adj_node not in adj_V_set:
+            adj_V_set.append(adj_node)
+    # if the set is MIS, we store it and then we go up a level removing the last added node
+    if check_if_set_is_MIS(G, V_set):
+        new_MIS = V_set.copy()
+        if set(new_MIS) not in [set(MIS) for MIS in set_of_found_MIS]:
+            set_of_found_MIS.append(new_MIS)
+        V_set.remove(node)
+    # main recursion loop: we proceed further only on the addable nodes and on the ones that don't form an already found MIS with the current V_set
+    if set(V_set + remaining_nodes) not in [set(MIS) for MIS in set_of_found_MIS]:
+        for rem_node in remaining_nodes:
+            if is_node_addable_to_IS(G, V_set, rem_node):
+                find_all_MIS_rec(G, rem_node, V_set.copy(), adj_V_set.copy(), remaining_nodes.copy(), set_of_found_MIS)
+
 
 def find_all_MIS(G):
+    set_of_found_MIS = []
+    V_set = []
+    remaining_nodes = list(G.nodes).copy()
+    # adding all nodes with degree 0
+    for node in remaining_nodes:
+        if G.degree[node] == 0:
+            V_set.append(node)
+    for node in V_set:
+        remaining_nodes.remove(node)
+    for node in remaining_nodes:
+        adj_V_set = []
+        if is_node_addable_to_IS(G, V_set, node):
+            find_all_MIS_rec(G, node, V_set.copy(), adj_V_set.copy(), remaining_nodes.copy(), set_of_found_MIS)
+    return set_of_found_MIS
 
-    return
+
+def find_maximum_MIS(G):
+    set_of_found_MIS = []
+    V_set = []
+    remaining_nodes = list(G.nodes).copy()
+    # adding all nodes with degree 0
+    for node in remaining_nodes:
+        if G.degree[node] == 0:
+            V_set.append(node)
+    for node in V_set:
+        remaining_nodes.remove(node)
+    for node in remaining_nodes:
+        adj_V_set = []
+        if is_node_addable_to_IS(G, V_set, node):
+            find_all_MIS_rec(G, node, V_set.copy(), adj_V_set.copy(), remaining_nodes.copy(), set_of_found_MIS)
+    return max(set_of_found_MIS, key = len)
