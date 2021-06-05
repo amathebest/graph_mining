@@ -2,53 +2,64 @@
 import os
 import re
 import json
+import random
 import itertools
+import numpy as np
 import networkx as nx
 from scipy.stats import bernoulli
 
 def main():
     # fetching all the files
-    base_path = 'sequences/'
+    base_path = '/home/heaven/Documents/graph_mining/Progetto/sequences/'
     files = os.listdir(base_path)
 
     # creating the Graph using networkx
     G = nx.Graph()
     node_index = 0
-
+    progress = 0
     # main loop for graph construction
+    i = 1 # testing with just 1000 files
     for file in files:
-        # opening file
-        with open(base_path + file) as in_file:
-            data = json.load(in_file)
+    #while i < 1000:
+        # opening current file
+        if '.json' in file:
+            #print(file)
+            with open(base_path + file) as in_file:
+                data = json.load(in_file)
 
-        # isolating the comment section
-        if 'comment' in data['results'][0]:
-            comments_section = data['results'][0]['comment']
+            progress = i*100/len(files)
+            i += 1
+            print(str("%.3f" % progress) + "%")
 
-            # isolating the authors
-            authors = []
-            for comment in comments_section:
-                pattern = '(_([a-zA-Z]+\.?\s?)*_)'
-                results = re.findall(pattern, comment)
-                if results:
-                    author = results[0][0].split('_')[1]
-                    authors.append(author)
+            # isolating the comment section
+            if 'comment' in data['results'][0]:
+                comments_section = data['results'][0]['comment']
 
-            # adding the nodes
-            for author in authors:
-                if author not in nx.get_node_attributes(G, 'name').values():
-                    G.add_node(node_index, name = author)
-                    node_index += 1
+                # isolating the authors
+                authors = []
+                for comment in comments_section:
+                    pattern = '_[A-Z][\w+\s?\.?]+_'
+                    results = re.findall(pattern, comment)
+                    if results:
+                        author = results[0].split('_')[1]
+                        authors.append(author)
 
-            # adding the edges
-            for pair in itertools.combinations(authors, 2):
-                # fetching node 1
-                node_1_key = list(nx.get_node_attributes(G, 'name').values()).index(pair[0])
-                # fetching node 2
-                node_2_key = list(nx.get_node_attributes(G, 'name').values()).index(pair[1])
-                # adding the edge if it isn't already in the graph
-                if (node_1_key, node_2_key) not in list(G.edges):
-                    G.add_edge(node_1_key, node_2_key)
+                # adding the nodes
+                for author in authors:
+                    if author not in nx.get_node_attributes(G, 'name').values():
+                        G.add_node(node_index, name = author)
+                        node_index += 1
+
+                # adding the edges
+                for pair in itertools.combinations(authors, 2):
+                    # fetching node 1
+                    node_1_key = list(nx.get_node_attributes(G, 'name').values()).index(pair[0])
+                    # fetching node 2
+                    node_2_key = list(nx.get_node_attributes(G, 'name').values()).index(pair[1])
+                    # adding the edge if it isn't already in the graph
+                    if (node_1_key, node_2_key) not in list(G.edges):
+                        G.add_edge(node_1_key, node_2_key)
+    print(list(G.adj))
 
 
 
