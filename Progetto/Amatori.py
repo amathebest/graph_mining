@@ -210,7 +210,6 @@ def find_all_MIS(G, mode):
         return max(set_of_found_MIS, key = len)
 
 # implementation of the functions described in paper cited in the title of the script for tasks 2 and 3 (all MIS and MaximumIS)
-
 # function that returns a degeneracy ordering for the graph G
 def get_degeneracy_ordering(G):
     deg_ordering = []
